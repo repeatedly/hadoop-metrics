@@ -4,11 +4,10 @@ module HadoopMetrics
   class TaskTracker
     include API
 
-    def initialize(host, port, opts = {})
-      @jmx_endpoint = URI("http://#{host}:#{port}/jmx?qry=hadoop:service=TaskTracker,name=TaskTrackerInfo")
-      @metrics_endpoint = URI("http://#{host}:#{port}/metrics?format=json")
-      @json_value_fields = %W(TasksInfoJson)
-      @snake_case = opts[:snake_case] || true
+    JSON_FILED_VALUES = %W(TasksInfoJson)
+
+    def info
+      via_jmx('hadoop:service=TaskTracker,name=TaskTrackerInfo', JSON_FILED_VALUES).first
     end
 
     def shuffle_output(column = 'sessionId')

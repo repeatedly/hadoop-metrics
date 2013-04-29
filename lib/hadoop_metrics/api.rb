@@ -3,20 +3,40 @@ require 'json'
 
 module HadoopMetrics
   module API
-    def jmx
-      jmx_json = HadoopMetrics.get_response(@jmx_endpoint)['beans'].first
-      @json_value_fields.each { |f|
-        jmx_json[f] = JSON.parse(jmx_json[f])
-      }
-      if @snake_case
-        jmx_json = HadoopMetrics.snake_cased(jmx_json)
-      end
-
-      jmx_json
+    def initialize(host, port, opts = {})
+      @endpoint = "#{host}:#{port}"
+      @metrics_endpoint = URI("http://#{@endpoint}/metrics?format=json")
+      @snake_case = opts[:snake_case] || true
     end
 
     def metrics
       HadoopMetrics.get_response(@metrics_endpoint)
+    end
+
+    def gc
+      disable_snake_case {
+        result = via_jmx('java.lang:type=GarbageCollector,name=*').map { |jmx_gc_info|
+          gc_info = {'type' => (/PS Scavenge/.match(jmx_gc_info['name']) ? 'minor' : 'major')}
+          gc_info['estimated_time'] = jmx_gc_info['CollectionTime']
+          gc_info['count'] = jmx_gc_info['CollectionCount']
+          gc_info['last_start'] = jmx_gc_info['LastGcInfo']['startTime']
+          gc_info['last_duration'] = jmx_gc_info['LastGcInfo']['duration']
+          gc_info
+        }
+      }
+    end
+
+    def via_jmx(query, json_fields = [])
+      HadoopMetrics.get_response(URI("http://#{@endpoint}/jmx?qry=#{query}"))['beans'].map { |jmx_json|
+        json_fields.each { |f|
+          jmx_json[f] = JSON.parse(jmx_json[f])
+        }
+        if @snake_case
+          jmx_json = HadoopMetrics.snake_cased(jmx_json)
+        end
+
+        jmx_json
+      }
     end
 
     private
@@ -33,6 +53,15 @@ module HadoopMetrics
       }.group_by { |target|
         target[column]
       }
+    end
+
+    def disable_snake_case
+      old_snake_case = @snake_case
+      @snake_case = false
+
+      yield
+    ensure
+      @snake_case = old_snake_case
     end
 
     def method_missing(method, *args)
@@ -62,10 +91,14 @@ module HadoopMetrics
   end
 
   def self.snake_cased(json)
-    snake_cased = {}
-    json.each_pair { |k, v|
-      snake_cased[HadoopMetrics.to_snake_case(k.dup)] = json[k]
+    snake_cased_json = {}
+    json.each_pair { |key, value|
+      v = json[key]
+      if v.is_a?(Hash)
+        v = snake_cased(v)
+      end
+      snake_cased_json[HadoopMetrics.to_snake_case(key.dup)] = v
     }
-    snake_cased
+    snake_cased_json
   end
 end

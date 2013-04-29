@@ -4,11 +4,10 @@ module HadoopMetrics
   class JobTracker
     include API
 
-    def initialize(host, port, opts = {})
-      @jmx_endpoint = URI("http://#{host}:#{port}/jmx?qry=hadoop:service=JobTracker,name=JobTrackerInfo")
-      @metrics_endpoint = URI("http://#{host}:#{port}/metrics?format=json")
-      @json_value_fields = %W(SummaryJson AliveNodesInfoJson BlacklistedNodesInfoJson QueueInfoJson)
-      @snake_case = opts.has_key?(:snake_case) ? opts[:snake_case] : true
+    JSON_FILED_VALUES = %W(SummaryJson AliveNodesInfoJson BlacklistedNodesInfoJson QueueInfoJson)
+
+    def info
+      via_jmx('hadoop:service=JobTracker,name=JobTrackerInfo', JSON_FILED_VALUES).first
     end
 
     def fairscheduler_pools(column = 'name')
