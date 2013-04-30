@@ -7,7 +7,10 @@ module HadoopMetrics
       @endpoint = "#{host}:#{port}"
       @metrics_endpoint = URI("http://#{@endpoint}/metrics?format=json")
       @snake_case = opts[:snake_case] || true
+      @name = opts[:name] || host
     end
+
+    attr_reader :name
 
     def metrics
       HadoopMetrics.get_response(@metrics_endpoint)
