@@ -1,4 +1,4 @@
-require 'hadoop_metrics/api'
+require "hadoop_metrics/api"
 
 module HadoopMetrics
   class NameNode

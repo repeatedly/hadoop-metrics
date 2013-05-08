@@ -1,4 +1,4 @@
-require 'hadoop_metrics/api'
+require "hadoop_metrics/api"
 
 module HadoopMetrics
   class JobTracker
@@ -10,19 +10,27 @@ module HadoopMetrics
       via_jmx('hadoop:service=JobTracker,name=JobTrackerInfo', JSON_FILED_VALUES).first
     end
 
-    def fairscheduler_pools(column = 'name')
-      group_by('fairscheduler', 'pools', column)
+    def mapred(opts = {})
+      disable_snake_case {
+        group_by('mapred', 'jobtracker', 'hostName', get_force(opts)).each_pair { |k, v|
+          return v.first
+        }
+      }
     end
 
-    def fairscheduler_jobs(column = 'name')
-      group_by('fairscheduler','jobs', column)
+    def fairscheduler_pools(opts = {})
+      group_by('fairscheduler', 'pools', get_column(opts), get_force(opts))
     end
 
-    def fairscheduler_running_tasks(target = 'pools')
-      fs = metrics['fairscheduler']
+    def fairscheduler_jobs(opts = {})
+      group_by('fairscheduler','jobs', get_column(opts), get_force(opts))
+    end
+
+    def fairscheduler_running_tasks(opts = {})
+      fs = metrics(get_force(opts))['fairscheduler']
       return nil if fs.nil?
 
-      targets = fs[target]
+      targets = fs[get_target(opts)]
       return nil if targets.nil?
 
       each_tasks = {}
@@ -32,6 +40,16 @@ module HadoopMetrics
         each_tasks[name] += target.last['runningTasks']
       }
       each_tasks
+    end
+
+    private
+
+    def get_column(opts)
+      opts[:column] || 'name'
+    end
+
+    def get_target(opts)
+      opts[:target] || 'pools'
     end
   end
 end

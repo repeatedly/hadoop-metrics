@@ -8,12 +8,18 @@ module HadoopMetrics
       @metrics_endpoint = URI("http://#{@endpoint}/metrics?format=json")
       @snake_case = opts[:snake_case] || true
       @name = opts[:name] || host
+      @metrics_cache = nil
     end
 
     attr_reader :name
 
-    def metrics
-      HadoopMetrics.get_response(@metrics_endpoint)
+    def metrics(force = true)
+      if !@metrics_cache.nil? and !force
+        return @metrics_cache
+      end
+
+      @metrics_cache = HadoopMetrics.get_response(@metrics_endpoint)
+      @metrics_cache
     end
 
     def gc
@@ -44,8 +50,12 @@ module HadoopMetrics
 
     private
 
-    def group_by(category, target, column)
-      categories = metrics[category]
+    def get_force(opts)
+      opts.has_key?(:force) ? opts[:force] : true
+    end
+
+    def group_by(category, target, column, force)
+      categories = metrics(force)[category]
       return nil if categories.nil?
 
       targets = categories[target]
