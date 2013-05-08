@@ -6,7 +6,7 @@ module HadoopMetrics
     def initialize(host, port, opts = {})
       @endpoint = "#{host}:#{port}"
       @metrics_endpoint = URI("http://#{@endpoint}/metrics?format=json")
-      @snake_case = opts[:snake_case] || true
+      @snake_case = opts.has_key?(:snake_case) ? opts[:snake_case] : true
       @name = opts[:name] || host
       @metrics_cache = nil
     end
