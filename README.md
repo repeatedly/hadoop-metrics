@@ -41,9 +41,18 @@ tt = HadoopMetrics::TaskTracker.new('localhost', 50060)
 puts JSON.pretty_generate(tt.shuffle_output)
 ```
 
+### TaskTracker
+
+```
+require 'hadoop_metrics/name_node'
+
+nn = HadoopMetrics::NameNode.new('localhost', 50070)
+puts JSON.pretty_generate(nn.dfs)
+```
+
 ### NOTE
 
-NameNode and DataNode are not supported yet.
+DataNode is not supported yet.
 
 ## Copyright
 
