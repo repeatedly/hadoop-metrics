@@ -7,7 +7,7 @@ module HadoopMetrics
     JSON_FILED_VALUES = %W(TasksInfoJson)
 
     def info
-      via_jmx('hadoop:service=TaskTracker,name=TaskTrackerInfo', JSON_FILED_VALUES).first
+      query_jmx('hadoop:service=TaskTracker,name=TaskTrackerInfo', JSON_FILED_VALUES).first
     end
 
     def shuffle_output(opts = {})

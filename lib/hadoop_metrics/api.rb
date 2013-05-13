@@ -24,7 +24,7 @@ module HadoopMetrics
 
     def gc
       disable_snake_case {
-        result = via_jmx('java.lang:type=GarbageCollector,name=*').map { |jmx_gc_info|
+        result = query_jmx('java.lang:type=GarbageCollector,name=*').map { |jmx_gc_info|
           return nil if jmx_gc_info['LastGcInfo'].nil?
 
           gc_info = {'type' => (/PS Scavenge/.match(jmx_gc_info['name']) ? 'minor' : 'major')}
@@ -37,8 +37,35 @@ module HadoopMetrics
       }
     end
 
-    def via_jmx(query, json_fields = [])
-      HadoopMetrics.get_response(URI("http://#{@endpoint}/jmx?qry=#{query}"))['beans'].map { |jmx_json|
+    MegaByte = 1024.0 * 1024
+
+    def memory
+      disable_snake_case {
+        result = {}
+
+        memory = query_jmx('java.lang:type=Memory').first
+        heap, non_heap = memory['HeapMemoryUsage'], memory['NonHeapMemoryUsage']
+        result['committed'] = (heap['committed'] + non_heap['committed']) / MegaByte
+        result['used'] = (heap['used'] + non_heap['used']) / MegaByte
+        result['max'] = (heap['max'] + non_heap['max']) / MegaByte
+
+        arguments = get_jmx('java.lang:type=Runtime::InputArguments').first['InputArguments']
+        result['mx_option'] = arguments.select { |arg| arg =~ /-Xmx(.*)m/ }.last["-Xmx".size..-2].to_i
+
+        result
+      }
+    end
+
+    def query_jmx(query, json_fields = [])
+      via_jmx('qry', query, json_fields)
+    end
+
+    def get_jmx(query, json_fields = [])
+      via_jmx('get', query, json_fields)
+    end
+
+    def via_jmx(type, query, json_fields = [])
+      HadoopMetrics.get_response(URI("http://#{@endpoint}/jmx?#{type}=#{query}"))['beans'].map { |jmx_json|
         json_fields.each { |f|
           jmx_json[f] = JSON.parse(jmx_json[f])
         }

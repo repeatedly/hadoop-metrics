@@ -7,11 +7,11 @@ module HadoopMetrics
     JSON_FILED_VALUES = %W(LiveNodes DeadNodes DecomNodes NameDirStatuses)
 
     def info
-      via_jmx('Hadoop:service=NameNode,name=NameNodeInfo', JSON_FILED_VALUES).first
+      query_jmx('Hadoop:service=NameNode,name=NameNodeInfo', JSON_FILED_VALUES).first
     end
 
     def dfs
-      via_jmx('Hadoop:service=NameNode,name=FSNamesystem').first
+      query_jmx('Hadoop:service=NameNode,name=FSNamesystem').first
     end
   end
 end

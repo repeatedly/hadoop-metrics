@@ -7,7 +7,7 @@ module HadoopMetrics
     JSON_FILED_VALUES = %W(SummaryJson AliveNodesInfoJson BlacklistedNodesInfoJson QueueInfoJson)
 
     def info
-      via_jmx('hadoop:service=JobTracker,name=JobTrackerInfo', JSON_FILED_VALUES).first
+      query_jmx('hadoop:service=JobTracker,name=JobTrackerInfo', JSON_FILED_VALUES).first
     end
 
     def mapred(opts = {})
