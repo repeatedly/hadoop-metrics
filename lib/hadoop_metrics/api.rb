@@ -25,6 +25,8 @@ module HadoopMetrics
     def gc
       disable_snake_case {
         result = via_jmx('java.lang:type=GarbageCollector,name=*').map { |jmx_gc_info|
+          return nil if jmx_gc_info['LastGcInfo'].nil?
+
           gc_info = {'type' => (/PS Scavenge/.match(jmx_gc_info['name']) ? 'minor' : 'major')}
           gc_info['estimated_time'] = jmx_gc_info['CollectionTime']
           gc_info['count'] = jmx_gc_info['CollectionCount']
