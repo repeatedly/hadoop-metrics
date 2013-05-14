@@ -4,6 +4,7 @@ module HadoopMetrics
   class NameNode
     include API
 
+    NODE_TYPE = 'nn'
     JSON_FILED_VALUES = %W(LiveNodes DeadNodes DecomNodes NameDirStatuses)
 
     def info

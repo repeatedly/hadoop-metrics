@@ -4,6 +4,7 @@ module HadoopMetrics
   class JobTracker
     include API
 
+    NODE_TYPE = 'jt'
     JSON_FILED_VALUES = %W(SummaryJson AliveNodesInfoJson BlacklistedNodesInfoJson QueueInfoJson)
 
     def info

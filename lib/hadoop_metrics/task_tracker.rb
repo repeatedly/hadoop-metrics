@@ -4,6 +4,7 @@ module HadoopMetrics
   class TaskTracker
     include API
 
+    NODE_TYPE = 'tt'
     JSON_FILED_VALUES = %W(TasksInfoJson)
 
     def info
