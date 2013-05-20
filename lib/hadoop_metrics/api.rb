@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 require 'net/http'
 require 'json'
 
@@ -22,16 +23,27 @@ module HadoopMetrics
       @metrics_cache
     end
 
+    GCNameMap = { 
+      'PS Scavenge' => 'minor',  # for backward compatibility
+      'PS MarkSweep' => 'major', # for backward compatibility
+      'ConcurrentMarkSweep' => 'c_mark_sweep',
+      'ParNew' => 'par_new'
+    }
+
     def gc
       disable_snake_case {
         result = query_jmx('java.lang:type=GarbageCollector,name=*').map { |jmx_gc_info|
           return nil if jmx_gc_info['LastGcInfo'].nil?
 
-          gc_info = {'type' => (/PS Scavenge/.match(jmx_gc_info['name']) ? 'minor' : 'major')}
+          gc_info = {'type' => GCNameMap[jmx_gc_info['Name']]}
           gc_info['estimated_time'] = jmx_gc_info['CollectionTime']
           gc_info['count'] = jmx_gc_info['CollectionCount']
-          gc_info['last_start'] = jmx_gc_info['LastGcInfo']['startTime']
-          gc_info['last_duration'] = jmx_gc_info['LastGcInfo']['duration']
+
+          last_gc_info = jmx_gc_info['LastGcInfo']
+          gc_info['last_start'] = last_gc_info['startTime']
+          gc_info['last_duration'] = last_gc_info['duration']
+          gc_info['after_gc'] = calc_memory_usage(last_gc_info)
+
           gc_info
         }
       }
@@ -49,6 +61,7 @@ module HadoopMetrics
         result['used'] = (heap['used'] + non_heap['used']) / MegaByte
         result['max'] = (heap['max'] + non_heap['max']) / MegaByte
 
+        # Can we use 'max' attribute instead of -Xmx option?
         arguments = get_jmx('java.lang:type=Runtime::InputArguments').first['InputArguments']
         result['mx_option'] = arguments.select { |arg| arg =~ /-Xmx(.*)m/ }.last["-Xmx".size..-2].to_i
 
@@ -81,6 +94,19 @@ module HadoopMetrics
 
     def get_force(opts)
       opts.has_key?(:force) ? opts[:force] : true
+    end
+
+    def calc_memory_usage(gc_info)
+      after_gc = {'committed' => 0, 'used' => 0, 'max' => 0}
+      gc_info['memoryUsageAfterGc'].each { |area|
+        usage = area['value']
+        after_gc['committed'] += usage['committed']
+        after_gc['used'] += usage['used']
+        after_gc['max'] += usage['max']
+      }
+      after_gc
+
+      # TODO: Add memoryUsageBeforeGc if needed
     end
 
     def group_by(category, target, column, force)
