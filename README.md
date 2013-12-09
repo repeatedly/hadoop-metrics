@@ -35,7 +35,7 @@ puts JSON.pretty_generate(jt.fairscheduler_jobs)
 ### TaskTracker
 
 ```
-require 'hadoop_metrics/job_tracker'
+require 'hadoop_metrics/task_tracker'
 
 tt = HadoopMetrics::TaskTracker.new('localhost', 50060)
 puts JSON.pretty_generate(tt.shuffle_output)
