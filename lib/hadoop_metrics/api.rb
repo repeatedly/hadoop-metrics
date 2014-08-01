@@ -32,20 +32,24 @@ module HadoopMetrics
 
     def gc
       disable_snake_case {
-        result = query_jmx('java.lang:type=GarbageCollector,name=*').map { |jmx_gc_info|
-          return nil if jmx_gc_info['LastGcInfo'].nil?
+        
+        result = []
+        query_jmx('java.lang:type=GarbageCollector,name=*').each { |jmx_gc_info|
+          unless jmx_gc_info['LastGcInfo'].nil?
 
-          gc_info = {'type' => GCNameMap[jmx_gc_info['Name']]}
-          gc_info['estimated_time'] = jmx_gc_info['CollectionTime']
-          gc_info['count'] = jmx_gc_info['CollectionCount']
+            gc_info = {'type' => GCNameMap[jmx_gc_info['Name']]}
+            gc_info['estimated_time'] = jmx_gc_info['CollectionTime']
+            gc_info['count'] = jmx_gc_info['CollectionCount']
 
-          last_gc_info = jmx_gc_info['LastGcInfo']
-          gc_info['last_start'] = last_gc_info['startTime']
-          gc_info['last_duration'] = last_gc_info['duration']
-          gc_info['after_gc'] = calc_memory_usage(last_gc_info)
+            last_gc_info = jmx_gc_info['LastGcInfo']
+            gc_info['last_start'] = last_gc_info['startTime']
+            gc_info['last_duration'] = last_gc_info['duration']
+            gc_info['after_gc'] = calc_memory_usage(last_gc_info)
 
-          gc_info
+            result << gc_info
+          end
         }
+        result
       }
     end
 
